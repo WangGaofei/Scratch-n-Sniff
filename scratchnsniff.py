@@ -17,7 +17,7 @@ if args.dstport == None:
     dest_port = 37008   #Set Default Port if none specified
 else:
     dest_port = int(args.dstport)
-packet_filter = str(args.packetfilter) + ' and not port ' + str(dest_port)
+packet_filter = str(args.packetfilter)
 interface = str(args.interface)
 
 print("Scratch\'n\'Sniff - Remote Packet Capture Agent")
@@ -28,6 +28,7 @@ if packet_filter == 'None':
     packet_filter = 'not port ' + str(dest_port)
     print("Capturing and forwarding all traffic on interface " + str(interface))
 else:
+    packet_filter = packet_filter + ' and not port ' + str(dest_port)
     print("Forwarding all traffic matching filter " + str(packet_filter) + " on interface " + str(interface))
 print("To remote host " + str(dest_ip) + " on UDP port " + str(dest_port))
 
@@ -46,8 +47,10 @@ def Forward(data):
 count = 1
 print("Starting capture...")
 capture = pyshark.LiveCapture(interface=interface, bpf_filter=packet_filter, include_raw=True, use_json=True)
+capture.set_debug()
 for packet in capture.sniff_continuously():
     Forward(packet.get_raw_packet())
-    print("Forwarded " + str(count) + " matching packets to remote host.", end='\r')
+    if count % 10000 == 0:
+        print("Forwarded " + str(count) + " matching packets to remote host.", end='\r')
     count += 1
 
